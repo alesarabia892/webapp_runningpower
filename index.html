@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Potencia</title>
+<style>
+  :root{
+    --bg:#0B0E12;
+    --card:#141920;
+    --card-2:#1B222B;
+    --line:#262E38;
+    --text:#EAEFF3;
+    --muted:#8A96A3;
+    --accent:#FF5E3A;
+    --accent-dim:#7A2E1E;
+    --cp:#3FD1C4;
+    --cp-dim:#123833;
+    --warn:#F2C94C;
+
+    --zc-recovery:#5B6B7A;
+    --zc-easy:#3FA9D1;
+    --zc-aerobichigh:#3FC1C4;
+    --zc-marathon:#3FD1AE;
+    --zc-tempo:#9AD13F;
+    --zc-threshold:#F2C94C;
+    --zc-nearcp:#F2954C;
+    --zc-vo2:#F26B4C;
+    --zc-speed:#FF5E3A;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:18px 16px 40px;
+  }
+  .num{font-family:ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;}
+
+  h1{
+    font-size:20px;
+    font-weight:700;
+    margin:4px 0 2px;
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    color:var(--muted);
+    font-size:13px;
+    margin-bottom:18px;
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+
+  .row-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .row-title h2{
+    font-size:13px;
+    font-weight:600;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    margin:0;
+  }
+  .edit-btn{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--muted);
+    font-size:12px;
+    padding:5px 10px;
+    border-radius:8px;
+  }
+
+  .rc-grid{
+    display:grid;
+    grid-template-columns:1fr auto auto;
+    gap:8px 10px;
+    font-size:14px;
+  }
+  .rc-grid .lbl{color:var(--muted);}
+  .rc-grid .time{text-align:right;color:var(--text);}
+  .rc-grid .watts{text-align:right;color:var(--accent);font-weight:600;}
+  .rc-grid input{
+    width:100%;
+    background:var(--card-2);
+    border:1px solid var(--line);
+    border-radius:8px;
+    color:var(--text);
+    padding:6px 8px;
+    font-size:13px;
+    text-align:right;
+  }
+
+  .cp-line{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid var(--line);
+    font-size:14px;
+  }
+  .cp-line .val{color:var(--cp);font-weight:700;font-size:16px;}
+
+  label.field-label{
+    display:block;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+
+  .dist-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .dist-row input{
+    flex:1;
+    background:var(--card-2);
+    border:1px solid var(--line);
+    border-radius:10px;
+    color:var(--text);
+    font-size:16px;
+    padding:10px 12px;
+  }
+  .dist-row .unit{
+    display:flex;
+    align-items:center;
+    color:var(--muted);
+    font-size:13px;
+    padding:0 4px;
+  }
+  .update-btn{
+    background:var(--accent);
+    border:none;
+    color:#fff;
+    font-size:13px;
+    font-weight:700;
+    padding:0 16px;
+    border-radius:10px;
+    white-space:nowrap;
+  }
+  .update-btn:active{
+    opacity:0.8;
+  }
+
+  .result{
+    background:linear-gradient(180deg,var(--card) 0%,var(--card-2) 100%);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px 18px 18px;
+    margin-bottom:14px;
+  }
+  .result .head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:14px;
+  }
+  .result .head .name{
+    font-size:15px;
+    font-weight:700;
+  }
+  .result .head .dist{
+    font-size:12px;
+    color:var(--muted);
+  }
+
+  .power-big{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    margin-bottom:2px;
+  }
+  .power-big .n{
+    font-size:44px;
+    font-weight:700;
+    color:var(--accent);
+    line-height:1;
+  }
+  .power-big .u{
+    font-size:16px;
+    color:var(--muted);
+  }
+  .power-pct{
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:16px;
+  }
+
+  .metrics{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+  }
+  .metric{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px 8px;
+  }
+  .metric .k{
+    font-size:9.5px;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    margin-bottom:4px;
+  }
+  .metric .v{
+    font-size:15px;
+    font-weight:700;
+  }
+
+  .guidance{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+    font-size:13px;
+    color:var(--muted);
+    line-height:1.5;
+  }
+  .guidance b{color:var(--text);}
+
+  .note{
+    font-size:11.5px;
+    color:var(--muted);
+    line-height:1.5;
+    padding:0 2px;
+  }
+
+  .save-msg{
+    font-size:12px;
+    color:var(--cp);
+    text-align:center;
+    height:16px;
+    margin-top:2px;
+  }
+
+  .fz-card{
+    position:relative;
+    background:var(--card-2);
+    border:1px solid var(--line);
+    border-left:4px solid var(--zc);
+    border-radius:10px;
+    padding:14px 16px 14px 13px;
+    margin-bottom:10px;
+  }
+  .fz-card:last-child{margin-bottom:0;}
+  .fz-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    margin-bottom:10px;
+    gap:10px;
+  }
+  .fz-title{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    min-width:0;
+  }
+  .fz-badge{
+    font-family:ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;
+    font-size:12px;
+    color:var(--zc);
+    font-weight:700;
+    flex-shrink:0;
+  }
+  .fz-head .fz-name{
+    font-size:14.5px;
+    font-weight:700;
+    color:var(--text);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .fz-head .fz-power{
+    font-size:22px;
+    font-weight:700;
+    color:var(--zc);
+    line-height:1;
+    white-space:nowrap;
+  }
+  .fz-stats{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .fz-stat{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:7px 8px;
+  }
+  .fz-stat .k{
+    font-size:9.5px;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    margin-bottom:3px;
+  }
+  .fz-stat .v{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--text);
+  }
+  .fz-legend{
+    font-size:12.5px;
+    color:var(--muted);
+    line-height:1.5;
+    padding-top:10px;
+    border-top:1px solid var(--line);
+  }
+  .fz-legend b{color:var(--text);}
+</style>
+</head>
+<body>
+
+  <h1>Calculadora de Potencia</h1>
+  <div class="sub">Basada en tu Stryd Race Calculator · CP y curva de potencia por distancia</div>
+
+  <div class="card" id="rcCard">
+    <div class="row-title">
+      <h2>Race Calculator (Stryd)</h2>
+      <button class="edit-btn" id="editBtn">Editar</button>
+    </div>
+    <div class="rc-grid" id="rcGrid"></div>
+    <div class="cp-line">
+      <span>Critical Power / MAP</span>
+      <span class="val num" id="cpDisplay">245 W</span>
+    </div>
+    <div class="note" style="margin-top:8px;padding:0;">
+      Configura este mismo número como CP/FTP en tu Polar o perfil Stryd. Todos los % que ves abajo son relativos a este valor — así el reloj te muestra en vivo el % correcto de cada zona.
+    </div>
+    <div class="save-msg" id="saveMsg"></div>
+  </div>
+
+  <div class="card">
+    <div class="row-title"><h2>Ritmo de Carrera — por distancia</h2></div>
+    <div class="dist-row">
+      <input type="number" id="distInput" value="15.6" step="0.1" min="0.1">
+      <div class="unit">km</div>
+      <button class="update-btn" id="updateDistBtn">Actualizar</button>
+    </div>
+    <div class="note" style="margin-top:8px;padding:0;">
+      Este es el único valor que cambia según la distancia. Úsalo cuando tengas una carrera o simulacro objetivo: te dice qué potencia deberías poder sostener para ESA distancia específica, interpolada de tu curva Stryd.
+    </div>
+  </div>
+
+  <div class="result">
+    <div class="head">
+      <span class="name">Ritmo de carrera</span>
+      <span class="dist" id="resDist">15.6 km</span>
+    </div>
+    <div class="power-big">
+      <span class="n num" id="resPower">–</span>
+      <span class="u">W</span>
+    </div>
+    <div class="power-pct" id="resPct">–</div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="k">% de tu CP</div>
+        <div class="v num" id="resPctCP" style="color:var(--cp);">–</div>
+      </div>
+      <div class="metric">
+        <div class="k">Ritmo estimado</div>
+        <div class="v num" id="resPace">–</div>
+      </div>
+      <div class="metric">
+        <div class="k">FC objetivo</div>
+        <div class="v num" id="resHR">–</div>
+      </div>
+    </div>
+
+    <div class="guidance" id="resGuidance"></div>
+  </div>
+
+  <div class="card">
+    <div class="row-title"><h2>Zonas de entrenamiento (fijas)</h2></div>
+    <div class="note" style="padding:0 0 12px;">
+      Estas potencias NO cambian según la distancia que corras ese día — se anclan a tu CP y a tus potencias de 5K/10K-HM/1 Milla. Sirven igual para una sesión de 6km que de 16km. El % que ves en cada tarjeta es ese rango de vatios expresado como % de tu CP/MAP (arriba), que es lo que verás en vivo en el reloj.
+    </div>
+    <div id="fixedZones"></div>
+  </div>
+
+  <div class="note">
+    Ritmo estimado por interpolación lineal power↔velocidad entre tus puntos del Race Calculator (aproximación, no garantía exacta). FC estimada como % de tu HRmax registrado.
+  </div>
+
+<script>
+const DEFAULTS = {
+  cp: 245,
+  hrmax: 195,
+  points: [
+    {label:"1 Milla", km:1.609, timeSec: 6*60+39, watts:287},
+    {label:"5K", km:5, timeSec: 22*60+22, watts:264},
+    {label:"10K", km:10, timeSec: 46*60+59, watts:251},
+    {label:"Media Maratón", km:21.0975, timeSec: (1*3600+44*60+51), watts:237},
+    {label:"Maratón", km:42.195, timeSec: (3*3600+45*60+42), watts:220}
+  ]
+};
+
+let state = null;
+let editing = false;
+
+function fmtTime(sec){
+  sec = Math.round(sec);
+  const h = Math.floor(sec/3600);
+  const m = Math.floor((sec%3600)/60);
+  const s = sec%60;
+  if(h>0) return h+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  return m+":"+String(s).padStart(2,"0");
+}
+function fmtPace(minPerKm){
+  const tot = Math.round(minPerKm*60);
+  const m = Math.floor(tot/60);
+  const s = tot%60;
+  return m+":"+String(s).padStart(2,"0")+" /km";
+}
+
+async function loadState(){
+  try{
+    const res = await window.storage.get("race-calculator-v2", false);
+    if(res && res.value){
+      state = JSON.parse(res.value);
+      return;
+    }
+  }catch(e){}
+  state = JSON.parse(JSON.stringify(DEFAULTS));
+}
+async function saveState(){
+  try{
+    await window.storage.set("race-calculator-v2", JSON.stringify(state), false);
+    const el = document.getElementById("saveMsg");
+    el.textContent = "Guardado ✓";
+    setTimeout(()=>{ el.textContent=""; }, 1500);
+  }catch(e){
+    console.error("Storage error", e);
+  }
+}
+
+function renderRC(){
+  const grid = document.getElementById("rcGrid");
+  grid.innerHTML = "";
+  state.points.forEach((p, i)=>{
+    const lbl = document.createElement("div");
+    lbl.className = "lbl";
+    lbl.textContent = p.label;
+    grid.appendChild(lbl);
+
+    if(editing){
+      const timeInput = document.createElement("input");
+      timeInput.value = fmtTime(p.timeSec);
+      timeInput.dataset.idx = i;
+      timeInput.dataset.field = "time";
+      grid.appendChild(timeInput);
+
+      const wattsInput = document.createElement("input");
+      wattsInput.value = p.watts;
+      wattsInput.type = "number";
+      wattsInput.dataset.idx = i;
+      wattsInput.dataset.field = "watts";
+      grid.appendChild(wattsInput);
+    } else {
+      const time = document.createElement("div");
+      time.className = "time num";
+      time.textContent = fmtTime(p.timeSec);
+      grid.appendChild(time);
+
+      const watts = document.createElement("div");
+      watts.className = "watts num";
+      watts.textContent = p.watts + " W";
+      grid.appendChild(watts);
+    }
+  });
+
+  const cpDisplay = document.getElementById("cpDisplay");
+  if(editing){
+    cpDisplay.innerHTML = "";
+    const inp = document.createElement("input");
+    inp.type = "number";
+    inp.value = state.cp;
+    inp.id = "cpInput";
+    inp.style.width = "70px";
+    inp.style.textAlign = "right";
+    inp.style.background = "var(--card-2)";
+    inp.style.border = "1px solid var(--line)";
+    inp.style.borderRadius = "8px";
+    inp.style.color = "var(--cp)";
+    inp.style.fontWeight = "700";
+    inp.style.padding = "4px 8px";
+    cpDisplay.appendChild(inp);
+    cpDisplay.append(" W");
+  } else {
+    cpDisplay.textContent = state.cp + " W";
+  }
+
+  document.getElementById("editBtn").textContent = editing ? "Guardar" : "Editar";
+}
+
+function parseTimeStr(str){
+  const parts = str.split(":").map(Number);
+  if(parts.some(isNaN)) return null;
+  if(parts.length===3) return parts[0]*3600+parts[1]*60+parts[2];
+  if(parts.length===2) return parts[0]*60+parts[1];
+  return null;
+}
+
+// interpolate/extrapolate a value over the race-calculator points using log(distance)
+function interpLog(points, km, key){
+  const sorted = [...points].sort((a,b)=>a.km-b.km);
+  const xs = sorted.map(p=>Math.log(p.km));
+  const ys = sorted.map(p=>p[key]);
+  const lx = Math.log(km);
+
+  if(lx <= xs[0]){
+    const slope = (ys[1]-ys[0])/(xs[1]-xs[0]);
+    return ys[0] + slope*(lx-xs[0]);
+  }
+  if(lx >= xs[xs.length-1]){
+    const n = xs.length;
+    const slope = (ys[n-1]-ys[n-2])/(xs[n-1]-xs[n-2]);
+    return ys[n-1] + slope*(lx-xs[n-1]);
+  }
+  for(let i=0;i<xs.length-1;i++){
+    if(lx>=xs[i] && lx<=xs[i+1]){
+      const frac = (lx-xs[i])/(xs[i+1]-xs[i]);
+      return ys[i] + frac*(ys[i+1]-ys[i]);
+    }
+  }
+  return ys[ys.length-1];
+}
+
+// power -> speed(km/h) using linear interpolation over the watts/speed pairs
+function powerToSpeed(points, watts){
+  const pairs = points.map(p=>({w:p.watts, v:p.km/(p.timeSec/3600)}))
+                       .sort((a,b)=>b.w-a.w); // descending power
+  if(watts >= pairs[0].w){
+    const a=pairs[0], b=pairs[1];
+    const slope = (b.v-a.v)/(b.w-a.w);
+    return a.v + slope*(watts-a.w);
+  }
+  if(watts <= pairs[pairs.length-1].w){
+    const a=pairs[pairs.length-2], b=pairs[pairs.length-1];
+    const slope = (b.v-a.v)/(b.w-a.w);
+    return b.v + slope*(watts-b.w);
+  }
+  for(let i=0;i<pairs.length-1;i++){
+    const a=pairs[i], b=pairs[i+1];
+    if(watts<=a.w && watts>=b.w){
+      const frac = (watts-a.w)/(b.w-a.w);
+      return a.v + frac*(b.v-a.v);
+    }
+  }
+  return pairs[pairs.length-1].v;
+}
+
+const ZONE_DEFS = [
+  {
+    id:"recovery", name:"Recuperación", color:"var(--zc-recovery)",
+    range:(cp,ref)=>[cp*0.60, cp*0.70],
+    pctLabel:(cp)=>"60–70% de tu CP ("+cp+" W)",
+    hr:[0.65,0.72],
+    benefit:"Para qué sirve: acelera la eliminación de metabolitos y favorece el flujo sanguíneo sin sumar carga adicional. No genera adaptación aeróbica nueva — su función es recuperar, no entrenar."
+  },
+  {
+    id:"easy", name:"Fácil / Z1-Z2", color:"var(--zc-easy)",
+    range:(cp,ref)=>[cp*0.70, cp*0.75],
+    pctLabel:(cp)=>"70–75% de tu CP ("+cp+" W)",
+    hr:[0.72,0.78],
+    benefit:"Para qué sirve: es la base de tu motor aeróbico, la zona más pura de dominio moderado (por debajo de tu LT1/umbral aeróbico). Aumenta la densidad mitocondrial, la capilarización y la capacidad de oxidar grasa como combustible — el volumen aquí es lo que sostiene todo lo demás, y aquí es donde de verdad no acumulas fatiga residual."
+  },
+  {
+    id:"aerobichigh", name:"Aeróbico Alto", color:"var(--zc-aerobichigh)",
+    range:(cp,ref)=>[cp*0.75, cp*0.80],
+    pctLabel:(cp)=>"75–80% de tu CP ("+cp+" W)",
+    hr:[0.78,0.82],
+    benefit:"Para qué sirve: es la franja de transición hacia tu LT1 (umbral aeróbico) — todavía dominio moderado, pero cerca del borde. Sigue siendo aeróbico y sirve para rodajes con algo más de firmeza, pero ya no es 'gratis' como el Fácil puro: úsalo con intención (rodajes progresivos suaves, segunda mitad de un fondo), no como default de todos los días, para no acumular fatiga sin el estímulo claro de una zona superior."
+  },
+  {
+    id:"marathon", name:"Maratón / Progresivo", color:"var(--zc-marathon)",
+    range:(cp,ref)=>[cp*0.80, cp*0.85],
+    pctLabel:(cp)=>"80–85% de tu CP ("+cp+" W)",
+    hr:[0.82,0.85],
+    benefit:"Para qué sirve: ritmo sostenido controlado, más firme que un fácil pero sin entrar en zona incómoda. Sirve para tramos de long run a ritmo objetivo de maratón o progresivos — el riesgo si NO lo nombras es que un rodaje 'fácil' se te vaya deambulando hasta aquí sin querer y acumule fatiga sin el estímulo claro de un fácil ni de un tempo."
+  },
+  {
+    id:"tempo", name:"Tempo", color:"var(--zc-tempo)",
+    range:(cp,ref)=>[ref*0.85, ref*0.90],
+    pctLabel:(cp,ref)=>"85–90% de tu referencia 10K–HM ("+Math.round(ref)+" W)",
+    hr:[0.83,0.88],
+    benefit:"Para qué sirve: mejora tu capacidad de sostener un ritmo 'incómodo-controlado' por tiempos largos. Sube el umbral de lactato de forma menos invasiva que el umbral puro — ideal para acumular volumen de calidad sin quemarte."
+  },
+  {
+    id:"threshold", name:"Umbral", color:"var(--zc-threshold)",
+    range:(cp,ref)=>[ref*0.90, ref*0.95],
+    pctLabel:(cp,ref)=>"90–95% de tu referencia 10K–HM ("+Math.round(ref)+" W)",
+    hr:[0.88,0.92],
+    benefit:"Para qué sirve: es el estímulo más directo para subir tu Critical Power. Entrena el reciclaje de lactato al límite de lo sostenible — el trabajo más específico para rendimiento en 10K-21K."
+  },
+  {
+    id:"nearcp", name:"Cruce / Cerca de CP", color:"var(--zc-nearcp)",
+    range:(cp,ref)=>[cp*0.95, cp*1.08],
+    pctLabel:(cp)=>"95–108% de tu CP ("+cp+" W)",
+    hr:[0.90,0.96],
+    benefit:"Para qué sirve: el estímulo más directo para mover tu Critical Power hacia arriba — corres justo alrededor de tu techo actual. Series tipo 4–6 x 5–6 min a este rango con recuperación corta ('cruise intervals') son más específicas para subir CP que el bloque de Umbral. Es probablemente tu zona más subentrenada hoy."
+  },
+  {
+    id:"vo2", name:"VO2max / Intervalos", color:"var(--zc-vo2)",
+    range:(cp,ref,p5k)=>[p5k*1.00, p5k*1.08],
+    pctLabel:(cp,ref,p5k)=>"100–108% de tu potencia de 5K ("+p5k+" W)",
+    hr:[0.92,0.97],
+    benefit:"Para qué sirve: eleva tu techo de consumo máximo de oxígeno y la potencia aeróbica máxima. Se traduce en más 'margen' bajo el ritmo de carrera — corres tu umbral sintiéndolo más fácil."
+  },
+  {
+    id:"speed", name:"Velocidad", color:"var(--zc-speed)",
+    range:(cp,ref,p5k,pMile)=>[pMile*1.00, pMile*1.10],
+    pctLabel:(cp,ref,p5k,pMile)=>"100–110% de tu potencia de 1 Milla ("+pMile+" W)",
+    hr:[0.95,1.00],
+    benefit:"Para qué sirve: mejora economía de carrera, reclutamiento neuromuscular y técnica a alta velocidad. No es un estímulo metabólico — es fuerza y coordinación aplicadas a la zancada."
+  }
+];
+
+function fmtHRPct(hrmax, band){
+  return Math.round(hrmax*band[0])+"–"+Math.round(hrmax*band[1])+" bpm";
+}
+
+function renderFixedZones(){
+  const container = document.getElementById("fixedZones");
+  container.innerHTML = "";
+
+  const cp = state.cp;
+  const p10k = state.points.find(p=>p.label==="10K").watts;
+  const pHM  = state.points.find(p=>p.label==="Media Maratón").watts;
+  const refThreshold = (p10k+pHM)/2;
+  const p5k = state.points.find(p=>p.label==="5K").watts;
+  const pMile = state.points.find(p=>p.label==="1 Milla").watts;
+
+  ZONE_DEFS.forEach((z, idx)=>{
+    const [lowW, highW] = z.range(cp, refThreshold, p5k, pMile);
+    const vLow = powerToSpeed(state.points, lowW);
+    const vHigh = powerToSpeed(state.points, highW);
+    const paceLow = 60/vHigh;
+    const paceHigh = 60/vLow;
+
+    const pctCPLow = Math.round(lowW/cp*100);
+    const pctCPHigh = Math.round(highW/cp*100);
+
+    const card = document.createElement("div");
+    card.className = "fz-card";
+    card.style.setProperty("--zc", z.color);
+    card.innerHTML = `
+      <div class="fz-head">
+        <div class="fz-title">
+          <span class="fz-badge">${String(idx+1).padStart(2,"0")}</span>
+          <span class="fz-name">${z.name}</span>
+        </div>
+        <span class="fz-power num">${pctCPLow}–${pctCPHigh}%</span>
+      </div>
+      <div class="fz-stats">
+        <div class="fz-stat"><div class="k">Vatios</div><div class="v num">${Math.round(lowW)}–${Math.round(highW)} W</div></div>
+        <div class="fz-stat"><div class="k">Ritmo</div><div class="v num">${fmtPace(paceLow)}–${fmtPace(paceHigh)}</div></div>
+        <div class="fz-stat"><div class="k">FC</div><div class="v num">${fmtHRPct(state.hrmax, z.hr)}</div></div>
+      </div>
+      <div class="fz-legend">${z.benefit}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function compute(){
+  const dist = parseFloat(document.getElementById("distInput").value) || 0;
+  document.getElementById("resDist").textContent = dist + " km";
+
+  const target = interpLog(state.points, dist, "watts");
+  const lowW = target*0.98;
+  const highW = target*1.02;
+  const pctLabel = "100% de tu potencia estimada para "+dist+" km (interpolada de tu curva Stryd)";
+
+  document.getElementById("resPower").textContent = Math.round(lowW)+"–"+Math.round(highW);
+  document.getElementById("resPct").textContent = pctLabel;
+
+  const pctCPLow = Math.round(lowW/state.cp*100);
+  const pctCPHigh = Math.round(highW/state.cp*100);
+  document.getElementById("resPctCP").textContent = pctCPLow+"–"+pctCPHigh+"%";
+
+  const vLow = powerToSpeed(state.points, lowW);
+  const vHigh = powerToSpeed(state.points, highW);
+  const paceLow = 60/vHigh;
+  const paceHigh = 60/vLow;
+  document.getElementById("resPace").textContent = fmtPace(paceLow)+" – "+fmtPace(paceHigh);
+
+  const hrmax = state.hrmax;
+  const hrLow = Math.round(hrmax*0.85);
+  const hrHigh = Math.round(hrmax*0.92);
+  document.getElementById("resHR").textContent = hrLow+"–"+hrHigh+" bpm";
+
+  document.getElementById("resGuidance").innerHTML = "<b>Para qué sirve:</b> simulacro del ritmo objetivo de esa distancia específica. Úsalo para rodajes de ritmo controlado, tramos de long run a ritmo de carrera, o para chequear si un objetivo de tiempo es realista hoy.";
+}
+
+async function init(){
+  try{
+  await loadState();
+  renderRC();
+  renderFixedZones();
+  compute();
+
+  document.getElementById("updateDistBtn").addEventListener("click", compute);
+  document.getElementById("distInput").addEventListener("keydown", (e)=>{
+    if(e.key === "Enter"){ compute(); e.target.blur(); }
+  });
+
+  document.getElementById("editBtn").addEventListener("click", async ()=>{
+    if(editing){
+      // save edits
+      const inputs = document.querySelectorAll('#rcGrid input');
+      inputs.forEach(inp=>{
+        const idx = parseInt(inp.dataset.idx);
+        const field = inp.dataset.field;
+        if(field==="time"){
+          const sec = parseTimeStr(inp.value);
+          if(sec) state.points[idx].timeSec = sec;
+        } else if(field==="watts"){
+          const w = parseFloat(inp.value);
+          if(!isNaN(w)) state.points[idx].watts = w;
+        }
+      });
+      const cpInput = document.getElementById("cpInput");
+      if(cpInput){
+        const cpVal = parseFloat(cpInput.value);
+        if(!isNaN(cpVal)) state.cp = cpVal;
+      }
+      editing = false;
+      renderRC();
+      renderFixedZones();
+      await saveState();
+      compute();
+    } else {
+      editing = true;
+      renderRC();
+    }
+  });
+  }catch(err){
+    document.body.innerHTML = '<div style="padding:20px;color:#EAEFF3;font-family:sans-serif;">'+
+      '<h2 style="color:#FF5E3A;">Error al cargar la calculadora</h2>'+
+      '<p style="color:#8A96A3;font-size:13px;">'+String(err && err.message ? err.message : err)+'</p></div>';
+    console.error(err);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
