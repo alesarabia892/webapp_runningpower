@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rutina de Fuerza</title>
+<style>
+:root{--bg:#0B0E12;--card:#141920;--card2:#1B222B;--line:#262E38;--text:#EAEFF3;--muted:#8A96A3;--accent:#FF5E3A;--cp:#3FD1C4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:max(18px,env(safe-area-inset-top)) 16px 48px;max-width:720px;margin-inline:auto}
+.num{font-family:ui-monospace,"SF Mono",Consolas,monospace}
+h1{font-size:22px;margin:4px 0 2px;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+.tabs,.cycles{display:flex;gap:8px;margin-bottom:12px}
+.tabs button,.cycles button{flex:1;background:var(--card);border:1px solid var(--line);color:var(--muted);padding:11px 8px;border-radius:12px;font-size:14px;font-weight:600}
+.tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.cycles button.on{border-color:var(--cp);color:var(--cp)}
+.meta{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12.5px;margin:4px 2px 14px;gap:8px}
+.ex{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:16px}
+.media{position:relative;aspect-ratio:4/3;background:#fff}
+.media img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.media img.f2{animation:blink 1.4s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.media.empty{display:flex;align-items:center;justify-content:center;background:var(--card2);color:var(--muted);font-size:13px;text-align:center;padding:20px}
+.badge{position:absolute;top:10px;left:10px;background:rgba(11,14,18,.85);color:var(--accent);font-weight:700;font-size:12px;padding:4px 9px;border-radius:8px;z-index:2}
+.body{padding:14px 16px 16px}
+.name{font-size:18px;font-weight:700;margin:0 0 10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.stat{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px}
+.stat .k{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.stat .v{font-size:16px;font-weight:700}
+.stat .v.a{color:var(--accent)}
+.tip{font-size:13px;color:var(--muted);line-height:1.5;border-top:1px solid var(--line);padding-top:10px}
+.tip b{color:var(--text)}
+.foot{font-size:11.5px;color:var(--muted);line-height:1.5}
+</style>
+</head>
+<body>
+<h1>Rutina de Fuerza</h1>
+<div class="sub">Complemento del running · guía ejercicio por ejercicio</div>
+<div class="tabs" id="tabs"></div>
+<div class="cycles" id="cycles"></div>
+<div class="meta" id="meta"></div>
+<div id="list"></div>
+<div class="foot">Imágenes: free-exercise-db (dominio público). Si un ejercicio no tiene imagen, pon su ruta en <span class="num">media</span> dentro de PLAN.</div>
+
+<script>
+// ===== CONFIGURACIÓN ESTÁTICA (edita aquí) =====
+const IMG = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/";
+const CYCLES = 3;
+const PLAN = {
+  A: { title:"Sesión A · Piernas", sub:"Unilateral · viernes · 3 ciclos", rest:"60–90 s entre ejercicios, 2 min entre ciclos", items:[
+    {n:"Sentadilla búlgara", reps:"8–10 /pierna", tempo:"3-1-1", media:"Split_Squat_with_Dumbbells", tip:"Pie trasero elevado, torso erguido. Baja con control hasta que el muslo delantero quede paralelo. <b>Peso en el talón delantero.</b>"},
+    {n:"Zancada caminando", reps:"10 /pierna", tempo:"2-0-1", media:"Bodyweight_Walking_Lunge", tip:"Paso largo, rodilla delantera sobre el tobillo, sin que choque la trasera. <b>Mantén la pelvis nivelada.</b>"},
+    {n:"Puente de glúteo a una pierna", reps:"10–12 /pierna", tempo:"1-2-1", media:"Single_Leg_Glute_Bridge", tip:"Empuja con el talón y pausa 2 s arriba. <b>Cadera arriba sin arquear la zona lumbar.</b>"},
+    {n:"Peso muerto rumano a una pierna", reps:"8 /pierna", tempo:"3-0-1", media:null, tip:"Bisagra de cadera, espalda neutra, pierna libre en línea con el torso. <b>Mira un punto fijo en el suelo.</b>"},
+    {n:"Elevación de talón a una pierna", reps:"12–15 /pierna", tempo:"2-1-2", media:"Standing_Dumbbell_Calf_Raise", tip:"Rango completo: baja el talón por debajo del escalón. <b>Pausa arriba.</b>"},
+    {n:"Wall sit", reps:"40–45 s", tempo:"isométrico", media:null, tip:"Espalda pegada, muslos paralelos, rodillas a 90°. <b>Respira, no apoyes las manos en los muslos.</b>"}
+  ]},
+  B: { title:"Sesión B · Circuito", sub:"Fullbody · 14 ejercicios · 3 rondas", rest:"20–30 s entre ejercicios, 2 min entre rondas", items:[
+    {n:"Sentadilla", reps:"15", tempo:"2-0-1", media:"Bodyweight_Squat", tip:"Pies al ancho de hombros, cadera atrás y abajo. <b>Rodillas siguen la línea de los pies.</b>"},
+    {n:"Zancada", reps:"10 /pierna", tempo:"2-0-1", media:"Bodyweight_Walking_Lunge", tip:"Torso erguido, paso largo. <b>Baja vertical, no hacia adelante.</b>"},
+    {n:"Elevación de talones", reps:"20", tempo:"1-1-2", media:"Standing_Dumbbell_Calf_Raise", tip:"Sube en punta de pies y baja lento. <b>Sin rebotes.</b>"},
+    {n:"Puente de glúteo", reps:"15", tempo:"1-2-1", media:"Single_Leg_Glute_Bridge", tip:"Aprieta glúteos arriba 2 s. <b>Costillas abajo.</b>"},
+    {n:"Abdomen superior", reps:"15", tempo:"2-0-1", media:"Crunches", tip:"Sube hombros, no el cuello. <b>Exhala al subir.</b>"},
+    {n:"Abdomen lateral", reps:"12 /lado", tempo:"2-0-1", media:"Oblique_Crunches_-_On_The_Floor", tip:"Lleva el codo hacia la rodilla contraria sin tirar del cuello."},
+    {n:"Abdomen inferior", reps:"12–15", tempo:"2-0-2", media:"Reverse_Crunch", tip:"Enrolla la pelvis hacia el pecho. <b>Sin impulso de piernas.</b>"},
+    {n:"Flexión de nudillos", reps:"10–12", tempo:"2-0-1", media:"Pushups", tip:"Muñeca neutra, codos a ~45°. <b>Cuerpo en línea recta.</b>"},
+    {n:"Flexión Mike Tyson", reps:"8–10", tempo:"2-0-1", media:"Pushups_Close_and_Wide_Hand_Positions", tip:"Manos en posición intermedia, mayor trabajo de tríceps y pecho interno."},
+    {n:"Flexión diamante", reps:"8–10", tempo:"2-0-1", media:"Push-Ups_-_Close_Triceps_Position", tip:"Manos juntas bajo el pecho. <b>Foco en tríceps.</b>"},
+    {n:"Flexión ancha", reps:"10–12", tempo:"2-0-1", media:"Push-Up_Wide", tip:"Manos más allá de los hombros. <b>Mayor énfasis pectoral.</b>"},
+    {n:"Flexión agarre cerrado", reps:"10", tempo:"2-0-1", media:"Incline_Push-Up_Close-Grip", tip:"Codos pegados al cuerpo; versión inclinada, más accesible."},
+    {n:"Flexión diamante con barras", reps:"8", tempo:"2-0-1", media:"Push-Ups_-_Close_Triceps_Position", tip:"Con barras aumenta el rango. <b>Baja hasta sentir el estiramiento del pecho.</b>"},
+    {n:"Plancha", reps:"45 s", tempo:"isométrico", media:"Plank", tip:"Glúteos y abdomen firmes, codos bajo hombros. <b>No dejes caer la cadera.</b>"}
+  ]}
+};
+// ===============================================
+
+let cur = "A", cyc = 1;
+const $ = id => document.getElementById(id);
+
+function render(){
+  const s = PLAN[cur];
+  $("tabs").innerHTML = Object.keys(PLAN).map(k=>`<button class="${k===cur?'on':''}" data-s="${k}">${k==='A'?'Sesión A':'Sesión B'}</button>`).join("");
+  $("cycles").innerHTML = Array.from({length:CYCLES},(_,i)=>`<button class="num ${i+1===cyc?'on':''}" data-c="${i+1}">Ciclo ${i+1}</button>`).join("");
+  $("meta").innerHTML = `<span><b style="color:var(--text)">${s.title}</b> · ${s.sub}</span><span>${s.items.length} ejercicios</span>`;
+  $("list").innerHTML = s.items.map((e,i)=>`
+    <article class="ex">
+      <div class="media ${e.media?'':'empty'}">
+        <span class="badge num">${String(i+1).padStart(2,"0")}/${s.items.length}</span>
+        ${e.media?`<img src="${IMG}${e.media}/0.jpg" alt="${e.n}" loading="lazy"><img class="f2" src="${IMG}${e.media}/1.jpg" alt="" loading="lazy">`:'Sin imagen aún<br>(agrega la ruta en media)'}
+      </div>
+      <div class="body">
+        <h2 class="name">${e.n}</h2>
+        <div class="stats">
+          <div class="stat"><div class="k">Series</div><div class="v num">${cyc}/${CYCLES}</div></div>
+          <div class="stat"><div class="k">Reps</div><div class="v num a">${e.reps}</div></div>
+          <div class="stat"><div class="k">Tempo</div><div class="v num">${e.tempo}</div></div>
+        </div>
+        <div class="tip">${e.tip}</div>
+      </div>
+    </article>`).join("") + `<div class="foot" style="margin-bottom:14px">Descanso: ${s.rest}.</div>`;
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  if(b.dataset.s){cur=b.dataset.s;render();window.scrollTo(0,0)}
+  if(b.dataset.c){cyc=+b.dataset.c;render()}
+});
+render();
+</script>
+</body>
+</html>
